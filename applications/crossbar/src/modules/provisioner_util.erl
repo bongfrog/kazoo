@@ -105,9 +105,8 @@ maybe_provision(_Context, _Status) -> 'false'.
 -spec maybe_provision_v5(cb_context:context(), ne_binary()) -> 'ok'.
 maybe_provision_v5(Context, ?HTTP_PUT) ->
     JObj = cb_context:doc(Context),
-    AuthToken =  cb_context:auth_token(Context),
-    _ = spawn('provisioner_v5', 'put', [JObj, AuthToken]),
-    'ok';
+    AuthToken = cb_context:auth_token(Context),
+    provision_v5_push(Context, 'put', JObj, AuthToken);
 maybe_provision_v5(Context, ?HTTP_POST) ->
     JObj = cb_context:doc(Context),
     AuthToken =  cb_context:auth_token(Context),
@@ -115,12 +114,21 @@ maybe_provision_v5(Context, ?HTTP_POST) ->
     OldAddress = wh_json:get_ne_value(<<"mac_address">>, cb_context:fetch(Context, 'db_doc')),
     case NewAddress =:= OldAddress of
         'true' ->
-            _ = spawn('provisioner_v5', 'post', [JObj, AuthToken]);
+            provision_v5_push(Context, 'post', JObj, AuthToken);
         'false' ->
             JObj1 = wh_json:set_value(<<"mac_address">>, OldAddress, JObj),
             _ = spawn('provisioner_v5', 'delete', [JObj1, AuthToken]),
-            _ = spawn('provisioner_v5', 'put', [JObj, AuthToken])
-    end,
+            provision_v5_push(Context, 'put', JObj, AuthToken)
+    end.
+
+-spec provision_v5_push(cb_context:context(), 'put' | 'post', wh_json:object(), ne_binary()) -> 'ok'.
+provision_v5_push(Context, PushMethod, JObj, AuthToken) ->
+    _ = case provisioner_v5:is_device_pushable(JObj, AuthToken) of
+            'true' ->
+                spawn('provisioner_v5', PushMethod, [JObj, AuthToken]);
+            'false' ->
+                do:set_error_and_save(Context)
+        end,
     'ok'.
 
 %%--------------------------------------------------------------------
