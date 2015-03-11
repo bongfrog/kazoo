@@ -15,6 +15,7 @@
 -export([delete/2]).
 -export([delete_account/2]).
 -export([update_account/3]).
+-export([is_device_pushable/2]).
 
 -include_lib("whistle/include/wh_types.hrl").
 -include_lib("whistle/include/wh_amqp.hrl").
@@ -112,6 +113,26 @@ update_account(AccountId, JObj, AuthToken) ->
              ,AccountId
              ,'none'
             ).
+
+%%--------------------------------------------------------------------
+%% @public
+%% @doc
+%% To use before a POST or PUT to a device.
+%% Return `false' if the account already has a device with the same MAC.
+%% @end
+%%--------------------------------------------------------------------
+is_device_pushable(wh_json:object(), ne_binary()) -> boolean().
+is_device_pushable(JObj, AuthToken) ->
+    AccountId = wh_json:get_value(<<"pvt_account_id">>, JObj),
+    MACAddress = wh_json:get_value(<<"mac_address">>, JObj),
+    Headers = req_headers(AuthToken),
+    HTTPOptions = [],
+    UrlString = req_uri('devices', AccountId, MACAddress),
+    lager:debug("pre-provisioning via ~s", [UrlString]),
+    case ibrowse:send_req(UrlString, Headers, 'get', [], HTTPOptions) of
+        {'ok', _Code, _, _Resp} -> 'false';
+        _Error -> 'true'
+    end.
 
 %%--------------------------------------------------------------------
 %% @private
