@@ -799,8 +799,12 @@ init_apps(AppsPath, AppUrl) ->
 
 -spec find_apps(ne_binary()) -> {'ok', ne_binaries()}.
 find_apps(AppsPath) ->
-    {'ok', Apps} = file:list_dir(AppsPath),
-    {'ok', [filename:join([AppsPath, App]) || App <- Apps]}.
+    AccFun =
+        fun (AppJSONPath, Acc) ->
+                App = filename:dirname(filename:dirname(AppJSONPath)),
+                [filename:absname(App) | Acc]
+        end,
+    {'ok', filelib:fold_files(AppsPath, "app\\.json", true, AccFun, [])}.
 
 -spec init_app(ne_binary(), ne_binary()) -> 'ok'.
 init_app(AppPath, AppUrl) ->
