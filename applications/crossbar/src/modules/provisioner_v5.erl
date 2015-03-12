@@ -121,7 +121,7 @@ update_account(AccountId, JObj, AuthToken) ->
 %% Return `true' if the account already has a device with the same MAC.
 %% @end
 %%--------------------------------------------------------------------
--spec is_device_pushable(wh_json:object(), ne_binary()) -> boolean().
+-spec check_MAC(wh_json:object(), ne_binary()) -> boolean().
 check_MAC(JObj, AuthToken) ->
     AccountId = wh_json:get_value(<<"pvt_account_id">>, JObj),
     MACAddress = wh_json:get_value(<<"mac_address">>, JObj),
