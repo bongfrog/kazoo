@@ -123,11 +123,13 @@ maybe_provision_v5(Context, ?HTTP_POST) ->
 
 -spec provision_v5_push(cb_context:context(), 'put' | 'post', wh_json:object(), ne_binary()) -> 'ok'.
 provision_v5_push(Context, PushMethod, JObj, AuthToken) ->
-    _ = case provisioner_v5:is_device_pushable(JObj, AuthToken) of
-            'true' ->
-                spawn('provisioner_v5', PushMethod, [JObj, AuthToken]);
+    _ = case provisioner_v5:check_MAC(JObj, AuthToken) of
             'false' ->
-                do:set_error_and_save(Context)
+                spawn('provisioner_v5', PushMethod, [JObj, AuthToken]);
+            'true' ->
+                save(
+                  cb_context:add_validation_error(<<"mac_address">>, <<"unique">>
+                                                 ,<<"Device already belongs to the account">>, Context))
         end,
     'ok'.
 
