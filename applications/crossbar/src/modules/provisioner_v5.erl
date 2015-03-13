@@ -15,7 +15,6 @@
 -export([delete/2]).
 -export([delete_account/2]).
 -export([update_account/3]).
--export([check_MAC/2]).
 
 -include_lib("whistle/include/wh_types.hrl").
 -include_lib("whistle/include/wh_amqp.hrl").
@@ -113,26 +112,6 @@ update_account(AccountId, JObj, AuthToken) ->
              ,AccountId
              ,'none'
             ).
-
-%%--------------------------------------------------------------------
-%% @public
-%% @doc
-%% Use before a POST or PUT to a device.
-%% Return `true' if the account already has a device with the same MAC.
-%% @end
-%%--------------------------------------------------------------------
--spec check_MAC(wh_json:object(), ne_binary()) -> boolean().
-check_MAC(JObj, AuthToken) ->
-    AccountId = wh_json:get_value(<<"pvt_account_id">>, JObj),
-    MACAddress = wh_json:get_value(<<"mac_address">>, JObj),
-    Headers = req_headers(AuthToken),
-    HTTPOptions = [],
-    UrlString = req_uri('devices', AccountId, MACAddress),
-    lager:debug("pre-provisioning via ~s", [UrlString]),
-    case ibrowse:send_req(UrlString, Headers, 'get', [], HTTPOptions) of
-        {'ok', "200", _, _Resp} -> 'true';
-        _Error -> 'false'
-    end.
 
 %%--------------------------------------------------------------------
 %% @private
