@@ -299,9 +299,8 @@ changed_mac_address(Context) ->
 
 -spec check_mac_address(api_binary(), cb_context:context()) -> cb_context:context().
 check_mac_address(DeviceId, Context) ->
-    case unique_mac_address(cb_context:req_value(Context, <<"mac_address">>)
-                            ,cb_context:account_db(Context)
-                           )
+    MacAddress = cb_context:req_value(Context, <<"mac_address">>),
+    case unique_mac_address(MacAddress, cb_context:account_db(Context))
     of
         'true' ->
             prepare_outbound_flags(DeviceId, Context);
@@ -312,7 +311,8 @@ check_mac_address(DeviceId, Context) ->
 -spec unique_mac_address(api_binary(), ne_binary()) -> boolean().
 unique_mac_address('undefined', _) -> 'true';
 unique_mac_address(MacAddress, DbName) ->
-    not(lists:member(MacAddress, get_mac_addresses(DbName))).
+    not (lists:member(MacAddress, get_mac_addresses(DbName))
+         andalso lists:member(MacAddress, get_all_mac_addresses())).
 
 -spec error_used_mac_address(cb_context:context()) -> cb_context:context().
 error_used_mac_address(Context) ->
